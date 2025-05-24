@@ -12,7 +12,9 @@
 ## 简介
 
 > SwiftUI 重构的 macOS 版 [PCL2](https://github.com/Hex-Dragon/PCL2)（作者：龙腾猫跃），追求更快、更好、更强。<br>
-> 我们 macOS 也要有自己的启动器！
+> 我们 macOS 也要有自己的启动器！<br>
+
+本项目使用了 [PCL-Community/glfw-patcher](https://github.com/PCL-Community/glfw-patcher) ，用于在本地自动 patch LWJGL 的 `lwjgl-glfw.jar`，以解决兼容性问题。
 
 ## 测试
 

@@ -1,0 +1,12 @@
+{
+    "arm64": {
+        "natives": {
+            "org.lwjgl:2.9.4-nightly-20150209": "https://repo1.maven.org/maven2/org/glavo/hmcl/lwjgl2-natives/2.9.3-rc1-osx-arm64/lwjgl2-natives-2.9.3-rc1-osx-arm64.jar",
+            "org.lwjgl:3.1.6": "https://libraries.minecraft.net/org/lwjgl/${artifactId}/3.3.1/${artifactId}-3.3.1-natives-macos-arm64.jar",
+            "org.lwjgl:3.2.1": "https://libraries.minecraft.net/org/lwjgl/${artifactId}/3.3.1/${artifactId}-3.3.1-natives-macos-arm64.jar",
+        },
+    },
+    "x86_64": {
+
+    }
+}

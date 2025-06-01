@@ -12,11 +12,14 @@ struct SettingsView: View {
     
     var body: some View {
         HStack {
-            Rectangle()
-                .fill(.white)
-                .frame(width: 120)
             ScrollView(.vertical, showsIndicators: true) {
                 VStack {
+                    MyButtonComponent(text: "打开日志") {
+                        NSWorkspace.shared.activateFileViewerSelecting([SharedConstants.shared.applicationLogUrl])
+                    }
+                    .frame(height: 40)
+                    .padding()
+                    .padding(.bottom, -23)
                     MyButtonComponent(text: "刷新Java列表") {
                         Task {
                             do {
@@ -41,16 +44,16 @@ struct SettingsView: View {
                                 if dataManager.javaVirtualMachines.filter({ $0.executableUrl == url }).isEmpty {
                                     let jvm = JavaVirtualMachine.of(url, true)
                                     if !jvm.isError {
-                                        LocalStorage.shared.userAddedJVMPaths.append(url)
+                                        LocalStorage.shared.userAddedJvmPaths.append(url)
                                         dataManager.javaVirtualMachines.append(jvm)
                                     } else {
-                                        // 错误
+                                        err("发生错误，无法手动添加 Java")
                                     }
                                 } else {
-                                    // 重复
+                                    err("无法手动添加 Java: 已有重复的 Java")
                                 }
                             } else {
-                                // 可执行文件不正确
+                                err("无法手动添加 Java: 可执行文件不正确")
                             }
                         }
                     }
@@ -73,6 +76,10 @@ struct SettingsView: View {
             }
         }
         .onAppear {
+            dataManager.leftTab(120) {
+                EmptyView()
+            }
+            
             if dataManager.javaVirtualMachines.isEmpty {
                 Task {
                     do {

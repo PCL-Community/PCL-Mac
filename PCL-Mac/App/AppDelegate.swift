@@ -6,24 +6,30 @@
 //
 
 import Cocoa
+import Zip
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LogStore.shared.clear()
+        log("App 已启动")
         log("正在初始化 Java 列表")
         Task {
             do {
                 try await JavaSearch.searchAndSet()
             } catch {
-                err("无法初始化 Java 列表: \(error)")
+                err("无法初始化 Java 列表: \(error.localizedDescription)")
             }
         }
+        
+        Zip.addCustomFileExtension("jar")
+        DataManager.shared.refreshVersionManifest()
+        log("App初始化完成")
+        
     }
     
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        Task {
-            await LogStore.shared.flushToDisk()
-        }
-        return .terminateLater
+        LogStore.shared.save()
+        return .terminateNow
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

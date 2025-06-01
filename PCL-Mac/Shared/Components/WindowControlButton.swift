@@ -29,7 +29,7 @@ struct WindowControlButton: View {
                 .bold()
                 .background(
                     RoundedRectangle(cornerRadius: 15)
-                        .fill(isHovered ? Color(hex: 0x3F89D1) : Color.clear)
+                        .fill(isHovered ? Color(hex: 0xFFFFFF, alpha: 0.17) : Color.clear)
                         .animation(.easeInOut(duration: 0.2), value: isHovered)
                         .frame(width: 30, height: 30)
                 )

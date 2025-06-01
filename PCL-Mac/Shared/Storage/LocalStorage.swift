@@ -7,18 +7,27 @@
 
 import SwiftUI
 
-public class LocalStorage {
+public class LocalStorage: ObservableObject {
     public static let shared = LocalStorage()
-    private let defaults = UserDefaults.standard
     
-    public var userAddedJVMPaths: [URL] {
+    @AppStorage("user_added_jvm_paths") private var urlStringArray: String = "[]"
+    public var userAddedJvmPaths: [URL] {
         get {
-            guard let urlStrings = defaults.array(forKey: "userAddedJVMPaths") as? [String] else { return [] }
-            return urlStrings.compactMap { URL(string: $0) }
+            (try? JSONDecoder().decode([String].self, from: Data(urlStringArray.utf8)))?.compactMap { URL(string: $0) } ?? []
         }
         set {
-            let urlStrings = newValue.map { $0.absoluteString }
-            defaults.set(urlStrings, forKey: "userAddedJVMPaths")
+            if let data = try? JSONEncoder().encode(newValue.map { $0.absoluteString }) {
+                urlStringArray = String(data: data, encoding: .utf8) ?? "[]"
+            }
+        }
+    }
+    
+    @AppStorage("theme") private var themeRawValue: String = Theme.pcl.rawValue
+    var theme: Theme {
+        get { Theme(rawValue: themeRawValue) ?? .pcl }
+        set {
+            themeRawValue = newValue.rawValue
+            objectWillChange.send()
         }
     }
     

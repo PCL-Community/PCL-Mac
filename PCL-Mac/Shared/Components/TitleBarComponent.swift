@@ -7,75 +7,49 @@
 
 import SwiftUI
 
-struct DraggableArea<Content: View>: NSViewRepresentable {
-    let content: () -> Content
+struct DraggableWindowArea<Content: View>: NSViewRepresentable {
+    let content: Content
 
-    func makeNSView(context: Context) -> DraggableNSHostingView<Content> {
-        let view = DraggableNSHostingView(rootView: content())
-        return view
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
     }
 
-    func updateNSView(_ nsView: DraggableNSHostingView<Content>, context: Context) {
-        nsView.rootView = content()
+    func makeNSView(context: Context) -> NSHostingView<Content> {
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.addSubview(DraggableHelperView())
+        hostingView.subviews.last?.frame = hostingView.bounds
+        hostingView.subviews.last?.autoresizingMask = [.width, .height]
+        return hostingView
+    }
+
+    func updateNSView(_ nsView: NSHostingView<Content>, context: Context) {
+        nsView.rootView = content
     }
 }
 
-class DraggableNSHostingView<Content: View>: NSHostingView<Content> {
-    private var mouseDownPointInWindow: NSPoint?
-    
+class DraggableHelperView: NSView {
     override func mouseDown(with event: NSEvent) {
-        mouseDownPointInWindow = event.locationInWindow
-    }
-    
-    override func mouseDragged(with event: NSEvent) {
-        guard let window = self.window,
-              let mouseDownPointInWindow = mouseDownPointInWindow else { return }
-        
-        if mouseDownPointInWindow.distance(to: event.locationInWindow) <= 1 {
-            window.mouseDown(with: event)
-            window.mouseUp(with: event)
-            return
+        if let window = self.window {
+            window.performDrag(with: event)
         }
-        let mouseOnScreen = NSEvent.mouseLocation
-        let newOrigin = NSPoint(x: mouseOnScreen.x - mouseDownPointInWindow.x,
-                                y: mouseOnScreen.y - mouseDownPointInWindow.y)
-        window.setFrameOrigin(newOrigin)
     }
-    
-    override func mouseUp(with event: NSEvent) {
-        mouseDownPointInWindow = nil
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return self
     }
 }
 
-struct TitleBarComponent: View {
-    @State private var initialWindowOrigin: CGPoint?
-    @Binding var currentPage: Page
-    
+struct GenericTitleBarComponent<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
     var body: some View {
         VStack {
             ZStack {
-                DraggableArea {
+                DraggableWindowArea {
                     Spacer()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                HStack {
-                    Image("TitleLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(height: 19)
-                        .bold()
-                        .onTapGesture {
-                            currentPage = .download
-                        }
-                    Tag(text: "Mac", color: .white)
-                        .foregroundStyle(Color(hex: 0x0B5AC9))
-                        .padding(.leading, 10)
-                    Spacer()
-                    MenuItemButton(page: .launcher, parent: self)
-                    MenuItemButton(page: .download, parent: self)
-                    MenuItemButton(page: .multiplayer, parent: self)
-                    MenuItemButton(page: .settings, parent: self)
-                    MenuItemButton(page: .others, parent: self)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                HStack(alignment: .center) {
+                    content()
                     Spacer()
                     WindowControlButton.Miniaturize
                     WindowControlButton.Close
@@ -85,18 +59,66 @@ struct TitleBarComponent: View {
         .padding()
         .frame(maxWidth: .infinity, maxHeight: 47)
         .background(
-            RadialGradient(
-                gradient: Gradient(colors: [Color(hex: 0x1177DC), Color(hex: 0x0F6AC4)]),
-                center: .center,
-                startRadius: 0,
-                endRadius: 410
-            )
+            LocalStorage.shared.theme.getGradientView()
         )
     }
 }
 
+struct TitleBarComponent: View {
+    var body: some View {
+        GenericTitleBarComponent {
+            Group {
+                Image("TitleLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 19)
+                    .bold()
+                Tag(text: "Mac", color: .white)
+                    .foregroundStyle(LocalStorage.shared.theme.gradientOr(Color(hex: 0x1269E4)))
+                    .padding(.leading, 10)
+                Spacer()
+                MenuItemButton(route: .launcher, parent: self)
+                MenuItemButton(route: .download, parent: self)
+                MenuItemButton(route: .multiplayer, parent: self)
+                MenuItemButton(route: .settings, parent: self)
+                MenuItemButton(route: .others, parent: self)
+            }
+        }
+    }
+}
+
+struct SubviewTitleBarComponent: View {
+    @ObservedObject private var dataManager: DataManager = DataManager.shared
+
+    var body: some View {
+        GenericTitleBarComponent {
+            Image("Back")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 18)
+                .onTapGesture {
+                    dataManager.router.removeLast()
+                }
+                .padding(.trailing, 5)
+            Text(getTitle())
+                .font(.custom("PCL English", size: 16))
+        }
+    }
+    
+    private func getTitle() -> String {
+        switch dataManager.router.getLast() {
+        case .installing(_):
+            return "下载管理"
+        default:
+            return "发现问题请在 https://github.com/PCL-Community/PCL-Mac/issues/new 上反馈"
+        }
+    }
+}
+
 struct MenuItemButton: View {
-    let page: Page
+    @ObservedObject private var dataManager: DataManager = DataManager.shared
+    
+    let route: AppRoute
     let parent: TitleBarComponent
     var icon: Image?
     @State private var isHovered = false
@@ -104,27 +126,29 @@ struct MenuItemButton: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
-                .foregroundStyle(parent.currentPage == page ? .white : (isHovered ? Color(hex: 0x3C8CDF) : .clear))
+                .foregroundStyle(dataManager.router.getRoot() == route ? .white : (isHovered ? Color(hex: 0xFFFFFF, alpha: 0.17) : .clear))
             
             HStack {
                 getImage()
                     .renderingMode(.template)
                     .interpolation(.high)
                     .resizable()
-                    .foregroundStyle(parent.currentPage == page ? Color(hex: 0x1269E4) : .white)
+                    .foregroundStyle(dataManager.router.getRoot() == route ?
+                                     AnyShapeStyle(LocalStorage.shared.theme.gradientOr(Color(hex: 0x1269E4))) : AnyShapeStyle(.white))
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
                     .position(x: 17, y: 13)
                 Text(getText())
-                    .foregroundStyle(parent.currentPage == page ? Color(hex: 0x1269E4) : .white)
+                    .foregroundStyle(dataManager.router.getRoot() == route ?
+                                     AnyShapeStyle(LocalStorage.shared.theme.gradientOr(Color(hex: 0x1269E4))) : AnyShapeStyle(.white))
                     .position(x: 9, y: 13)
             }
         }
         .frame(width: 75, height: 27)
         .animation(.easeInOut(duration: 0.2), value: isHovered)
-        .animation(.easeInOut(duration: 0.2), value: parent.currentPage == page)
+        .animation(.easeInOut(duration: 0.2), value: dataManager.router.getRoot() == route)
         .onTapGesture {
-            parent.currentPage = page
+            dataManager.router.setRoot(route)
         }
         .onHover { hover in
             isHovered = hover
@@ -132,23 +156,25 @@ struct MenuItemButton: View {
     }
     
     private func getImage() -> Image {
-        let key = switch (page) {
+        let key = switch route {
         case .launcher: "LaunchItem"
         case .download: "DownloadItem"
         case .multiplayer: "MultiplayerItem"
         case .settings: "SettingsItem"
         case .others: "OthersItem"
+        default: ""
         }
         return Image(key)
     }
     
     private func getText() -> String {
-        return switch (page) {
+        return switch route {
         case .launcher: "启动"
         case .download: "下载"
         case .multiplayer: "联机"
         case .settings: "设置"
         case .others: "更多"
+        default: ""
         }
     }
 }
@@ -167,4 +193,8 @@ struct Tag: View {
                 )
         }
     }
+}
+
+#Preview {
+    SubviewTitleBarComponent()
 }

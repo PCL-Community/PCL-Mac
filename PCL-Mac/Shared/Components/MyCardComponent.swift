@@ -9,17 +9,23 @@ import SwiftUI
 
 struct MyCardComponent<Content: View>: View {
     let title: String
-    let content: () -> Content
+    private let content: Content
     @State private var isHovered: Bool = false
-    @State private var isUnfolded: Bool = false
+    @State private var isUnfolded: Bool = false // 带动画
+    @State private var showContent: Bool = false // 无动画
+    @State private var contentHeight: CGFloat = .zero
+
+    init(title: String, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.content = content()
+    }
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             ZStack {
                 HStack {
                     Text(title)
-                        .font(.system(size: 14))
-                        .foregroundStyle(isHovered ? Color(hex: 0x0B5BCB) : .black)
+                        .font(.custom("PCL English", size: 14))
                     Spacer()
                     Image("FoldController")
                         .resizable()
@@ -27,39 +33,63 @@ struct MyCardComponent<Content: View>: View {
                         .frame(width: 20, height: 20)
                         .offset(x: -8, y: 4)
                         .rotationEffect(.degrees(isUnfolded ? 180 : 0), anchor: .center)
-                        .foregroundStyle(isHovered ? Color(hex: 0x0B5BCB) : .black)
                 }
+                .foregroundStyle(isHovered ? Color(hex: 0x0B5BCB) : .black)
                 Color.clear
-                    .frame(height: 20)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        withAnimation(.spring(response: 0.2, dampingFraction: 1, blendDuration: 0)) {
+                        let before: Bool = !showContent
+                        if before {
+                            showContent.toggle()
+                        }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85, blendDuration: 0)) {
                             isUnfolded.toggle()
+                        }
+                        if !before {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                showContent.toggle()
+                            }
                         }
                     }
             }
-            if isUnfolded {
-                content()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .identity
-                    ))
+            .frame(height: 9)
+
+            ZStack(alignment: .top) {
+                content
+                    .background(
+                        GeometryReader { proxy in
+                            Color.clear
+                                .preference(key: ContentHeightKey.self, value: proxy.size.height)
+                        }
+                    )
+                    .opacity(showContent ? 1 : 0)
             }
+            .frame(height: isUnfolded ? contentHeight : 0, alignment: .top)
+            .clipped()
+            .padding(.top, showContent ? 10 : 0)
+            .animation(.easeInOut(duration: 0.3), value: isUnfolded)
+            .animation(.easeInOut(duration: 0.3), value: contentHeight)
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(.white)
-                .shadow(color: isHovered ? Color(hex: 0x0B5BcB) : .gray, radius: isHovered ? 2 : 2, x: 0.5, y: 0.5)
-        )
-        .animation(
-            .spring(response: 0.2, dampingFraction: 1),
-            value: isUnfolded
+                .shadow(color: isHovered ? Color(hex: 0x0B5BCB) : .gray, radius: 2, x: 0.5, y: 0.5)
         )
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .onHover { hover in
             isHovered = hover
         }
+        .onPreferenceChange(ContentHeightKey.self) { h in
+            if h > 0 { contentHeight = h }
+        }
+    }
+}
+
+fileprivate struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = .zero
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
@@ -72,7 +102,7 @@ struct StaticMyCardComponent<Content: View>: View {
         VStack {
             HStack {
                 Text(title)
-                    .font(.system(size: 14))
+                    .font(.custom("PCL English", size: 14))
                     .foregroundStyle(isHovered ? Color(hex: 0x0B5BCB) : .black)
                 Spacer()
             }
@@ -82,7 +112,28 @@ struct StaticMyCardComponent<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(.white)
-                .shadow(color: isHovered ? Color(hex: 0x0B5BcB) : .gray, radius: isHovered ? 2 : 2, x: 0.5, y: 0.5)
+                .shadow(color: isHovered ? Color(hex: 0x0B5BCB) : .gray, radius: isHovered ? 2 : 2, x: 0.5, y: 0.5)
+        )
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { hover in
+            isHovered = hover
+        }
+    }
+}
+
+struct TitlelessMyCardComponent<Content: View>: View {
+    let content: () -> Content
+    @State private var isHovered: Bool = false
+    
+    var body: some View {
+        VStack {
+            content()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.white)
+                .shadow(color: isHovered ? Color(hex: 0x0B5BCB) : .gray, radius: isHovered ? 2 : 2, x: 0.5, y: 0.5)
         )
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .onHover { hover in

@@ -8,87 +8,98 @@
 import Foundation
 import SwiftUI
 
-actor LogStore {
+final class LogStore {
     let dateFormatter = DateFormatter()
-    nonisolated static let shared = LogStore()
+    static let shared = LogStore()
     private var logs: [String] = []
     private let maxCapacity = 10_000
+    private let writeImmediately = true
+    
+    private let queue = DispatchQueue(label: "io.github.pcl-community.LogStoreQueue")
+
+    private init() {
+        dateFormatter.dateFormat = "[yyyy-MM-dd] [HH:mm:ss.SSS]"
+        dateFormatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+    }
     
     func append(_ message: String, _ level: String, _ caller: String) {
-        if logs.count >= maxCapacity {
-            logs.removeFirst(1000)
-        }
-        logs.append("\(dateFormatter.string(from: Date())) [\(level)] \(caller): \(message)")
-        print(logs.last!)
-    }
-    func flushToDisk() {
-        let content = logs.joined(separator: "\n")
-        Task {
-            do {
-                try await FileManager.default.writeLog(content)
-                log("日志保存成功")
-            } catch {
-                err("日志保存失败: \(error)")
+        let logLine = "\(dateFormatter.string(from: Date())) [\(level)] \(caller): \(message)"
+        queue.async {
+            if self.logs.count >= self.maxCapacity {
+                self.logs.removeFirst(1000)
             }
-            log("已触发进程终止")
-            await NSApp.reply(toApplicationShouldTerminate: true)
+            self.logs.append(logLine)
+            if self.writeImmediately {
+                self.appendToDisk(logLine + "\n")
+            }
+            print(logLine)
         }
     }
     
-    init() {
-        dateFormatter.dateFormat = "[yyyy-MM-dd] [HH:mm:ss]"
-        dateFormatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
-        dateFormatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+    func appendToDisk(_ content: String, _ callback: ((Bool) -> Void)? = nil) {
+        do {
+            try FileManager.writeLog(content)
+            callback?(true)
+        } catch {
+            err("日志保存失败: \(error)")
+            callback?(false)
+        }
+    }
+    
+    func clear() {
+        try? FileManager.default.removeItem(at: SharedConstants.shared.applicationLogUrl)
+    }
+    
+    func save() {
+        if !writeImmediately {
+            queue.async {
+                let allLogs = self.logs.joined(separator: "\n")
+                self.appendToDisk(allLogs) { isSuccess in
+                    if isSuccess {
+                        log("日志保存成功")
+                    }
+                    log("已触发进程终止")
+                    DispatchQueue.main.async {
+                        NSApp.reply(toApplicationShouldTerminate: true)
+                    }
+                }
+            }
+        }
     }
 }
 
-@MainActor
-class Logger {
+final class Logger {
     static func log(_ message: String, _ caller: String) {
-        Task {
-            await LogStore.shared.append(message, "LOG", caller)
-        }
+        LogStore.shared.append(message, "LOG", caller)
     }
     
     static func warn(_ message: String, _ caller: String) {
-        Task {
-            await LogStore.shared.append(message, "WRN", caller)
-        }
+        LogStore.shared.append(message, "WRN", caller)
     }
     
     static func error(_ message: String, _ caller: String) {
-        Task {
-            await LogStore.shared.append(message, "ERR", caller)
-        }
+        LogStore.shared.append(message, "ERR", caller)
     }
     
     static func debug(_ message: String, _ caller: String) {
-        Task {
-            await LogStore.shared.append(message, "DEBUG", caller)
-        }
+#if DEBUG
+        LogStore.shared.append(message, "DEBUG", caller)
+#endif
     }
 }
 
-func log(_ message: String, file: String = #file, line: Int = #line) {
-    Task { @MainActor in
-        Logger.log(message, file.split(separator: "/").last! + ":" + String(line))
-    }
+func log(_ message: Any, file: String = #file, line: Int = #line) {
+    Logger.log(String(describing: message), file.split(separator: "/").last! + ":" + String(line))
 }
 
-func warn(_ message: String, file: String = #file, line: Int = #line) {
-    Task { @MainActor in
-        Logger.warn(message, file.split(separator: "/").last! + ":" + String(line))
-    }
+func warn(_ message: Any, file: String = #file, line: Int = #line) {
+    Logger.warn(String(describing: message), file.split(separator: "/").last! + ":" + String(line))
 }
 
-func err(_ message: String, file: String = #file, line: Int = #line) {
-    Task { @MainActor in
-        Logger.error(message, file.split(separator: "/").last! + ":" + String(line))
-    }
+func err(_ message: Any, file: String = #file, line: Int = #line) {
+    Logger.error(String(describing: message), file.split(separator: "/").last! + ":" + String(line))
 }
 
-func debug(_ message: String, file: String = #file, line: Int = #line) {
-    Task { @MainActor in
-        Logger.debug(message, file.split(separator: "/").last! + ":" + String(line))
-    }
+func debug(_ message: Any, file: String = #file, line: Int = #line) {
+    Logger.debug(String(describing: message), file.split(separator: "/").last! + ":" + String(line))
 }

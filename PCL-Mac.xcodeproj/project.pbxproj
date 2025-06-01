@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EC01E7E82DDC3BEA006EF529 /* log4j2.xml in Resources */ = {isa = PBXBuildFile; fileRef = EC01E7E62DDC3BEA006EF529 /* log4j2.xml */; };
+		EC01E7E92DDC3BEA006EF529 /* log4j2-1.12-.xml in Resources */ = {isa = PBXBuildFile; fileRef = EC01E7E72DDC3BEA006EF529 /* log4j2-1.12-.xml */; };
+		EC23B6332DE5DC5B00CBEA9C /* PCL.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EC23B6322DE5DC5B00CBEA9C /* PCL.ttf */; };
+		EC2E78572DE9387100876873 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = EC2E78562DE9387100876873 /* Zip */; };
+		EC9A7DCA2DE150170018815F /* glfw-patcher.jar in Resources */ = {isa = PBXBuildFile; fileRef = EC9A7DC82DE1500F0018815F /* glfw-patcher.jar */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		ECA5D8E02DD99A4C006C58F7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -17,13 +25,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EC01E7E62DDC3BEA006EF529 /* log4j2.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = log4j2.xml; sourceTree = "<group>"; };
+		EC01E7E72DDC3BEA006EF529 /* log4j2-1.12-.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "log4j2-1.12-.xml"; sourceTree = "<group>"; };
+		EC23B6322DE5DC5B00CBEA9C /* PCL.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = PCL.ttf; sourceTree = "<group>"; };
+		EC9A7DC82DE1500F0018815F /* glfw-patcher.jar */ = {isa = PBXFileReference; lastKnownFileType = archive.jar; path = "glfw-patcher.jar"; sourceTree = "<group>"; };
 		EC9EAEC92DD85E48006CEDCC /* PCL-Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PCL-Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ECA5D8DC2DD99A4C006C58F7 /* PCL-MacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "PCL-MacTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		ECD256602DDBE69800A0F233 /* Exceptions for "PCL-Mac" folder in "PCL-Mac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = EC9EAEC82DD85E48006CEDCC /* PCL-Mac */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EC9EAECB2DD85E48006CEDCC /* PCL-Mac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				ECD256602DDBE69800A0F233 /* Exceptions for "PCL-Mac" folder in "PCL-Mac" target */,
+			);
 			path = "PCL-Mac";
 			sourceTree = "<group>";
 		};
@@ -39,6 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC2E78572DE9387100876873 /* Zip in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -52,11 +78,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EC01E7E52DDC3BD2006EF529 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				EC23B6322DE5DC5B00CBEA9C /* PCL.ttf */,
+				EC9A7DC82DE1500F0018815F /* glfw-patcher.jar */,
+				EC01E7E62DDC3BEA006EF529 /* log4j2.xml */,
+				EC01E7E72DDC3BEA006EF529 /* log4j2-1.12-.xml */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		EC84E73F2DDD56E500524871 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		EC9EAEC02DD85E48006CEDCC = {
 			isa = PBXGroup;
 			children = (
+				EC01E7E52DDC3BD2006EF529 /* Resources */,
 				EC9EAECB2DD85E48006CEDCC /* PCL-Mac */,
 				ECA5D8DD2DD99A4C006C58F7 /* PCL-MacTests */,
+				EC84E73F2DDD56E500524871 /* Frameworks */,
 				EC9EAECA2DD85E48006CEDCC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +136,7 @@
 			);
 			name = "PCL-Mac";
 			packageProductDependencies = (
+				EC2E78562DE9387100876873 /* Zip */,
 			);
 			productName = "PCL-Mac";
 			productReference = EC9EAEC92DD85E48006CEDCC /* PCL-Mac.app */;
@@ -147,6 +194,9 @@
 			);
 			mainGroup = EC9EAEC02DD85E48006CEDCC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EC2E78552DE9387100876873 /* XCRemoteSwiftPackageReference "Zip" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EC9EAECA2DD85E48006CEDCC /* Products */;
 			projectDirPath = "";
@@ -163,6 +213,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC9A7DCA2DE150170018815F /* glfw-patcher.jar in Resources */,
+				EC01E7E82DDC3BEA006EF529 /* log4j2.xml in Resources */,
+				EC23B6332DE5DC5B00CBEA9C /* PCL.ttf in Resources */,
+				EC01E7E92DDC3BEA006EF529 /* log4j2-1.12-.xml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,6 +389,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PCL-Mac/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "PCL Mac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -367,6 +422,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PCL-Mac/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "PCL Mac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -446,6 +502,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EC2E78552DE9387100876873 /* XCRemoteSwiftPackageReference "Zip" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/marmelroy/Zip.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EC2E78562DE9387100876873 /* Zip */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EC2E78552DE9387100876873 /* XCRemoteSwiftPackageReference "Zip" */;
+			productName = Zip;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EC9EAEC12DD85E48006CEDCC /* Project object */;
 }

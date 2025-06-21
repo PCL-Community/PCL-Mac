@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class MinecraftVersion: Comparable {
+public class MinecraftVersion: Comparable, Hashable {
     public let displayName: String
     public let type: VersionType
     private var _releaseDate: Date?
@@ -16,6 +16,10 @@ public class MinecraftVersion: Comparable {
             _releaseDate = VersionManifest.getReleaseDate(self)
         }
         return _releaseDate ?? Date(timeIntervalSince1970: TimeInterval(0))
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(displayName)
     }
     
     public init(displayName: String, type: VersionType? = nil) {
@@ -37,6 +41,8 @@ public enum VersionType: String {
     case snapshot = "snapshot"
     case prerelease = "pre-release"
     case rc = "rc"
+    case alpha = "old_alpha"
+    case beta = "old_beta"
     
     public static func parse(_ displayVersion: String) -> VersionType {
         guard let manifest = DataManager.shared.versionManifest else {

@@ -13,6 +13,7 @@
 		EC2E78572DE9387100876873 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = EC2E78562DE9387100876873 /* Zip */; };
 		EC9507372DFCF17700018EE0 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = EC9507362DFCF17700018EE0 /* SwiftyJSON */; };
 		EC9A7DCA2DE150170018815F /* glfw-patcher.jar in Resources */ = {isa = PBXBuildFile; fileRef = EC9A7DC82DE1500F0018815F /* glfw-patcher.jar */; };
+		ECA55A702E0415BE006499CC /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = ECA55A6F2E0415BE006499CC /* Alamofire */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ECA55A702E0415BE006499CC /* Alamofire in Frameworks */,
 				EC9507372DFCF17700018EE0 /* SwiftyJSON in Frameworks */,
 				EC2E78572DE9387100876873 /* Zip in Frameworks */,
 			);
@@ -140,6 +142,7 @@
 			packageProductDependencies = (
 				EC2E78562DE9387100876873 /* Zip */,
 				EC9507362DFCF17700018EE0 /* SwiftyJSON */,
+				ECA55A6F2E0415BE006499CC /* Alamofire */,
 			);
 			productName = "PCL-Mac";
 			productReference = EC9EAEC92DD85E48006CEDCC /* PCL-Mac.app */;
@@ -200,6 +203,7 @@
 			packageReferences = (
 				EC2E78552DE9387100876873 /* XCRemoteSwiftPackageReference "Zip" */,
 				EC9507352DFCF17700018EE0 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
+				ECA55A6E2E0415BE006499CC /* XCRemoteSwiftPackageReference "Alamofire" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EC9EAECA2DD85E48006CEDCC /* Products */;
@@ -524,6 +528,14 @@
 				minimumVersion = 5.0.2;
 			};
 		};
+		ECA55A6E2E0415BE006499CC /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -536,6 +548,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = EC9507352DFCF17700018EE0 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
 			productName = SwiftyJSON;
+		};
+		ECA55A6F2E0415BE006499CC /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ECA55A6E2E0415BE006499CC /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

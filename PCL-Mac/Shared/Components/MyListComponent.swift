@@ -7,15 +7,15 @@
 
 import SwiftUI
 
-struct MyListComponent<EnumType, Content: View>: View where EnumType: CaseIterable & Hashable {
-    @Binding var selection: EnumType?
-    let content: (EnumType, Bool) -> Content
-    let cases: [EnumType]
+struct MyListComponent<Content: View>: View {
+    @ObservedObject private var dataManager: DataManager = .shared
+    
+    let content: (AppRoute, Bool) -> Content
+    let cases: [AppRoute]
     @State private var indicatorHeight: CGFloat = 24
-    @State private var hovering: EnumType? = nil
+    @State private var hovering: AppRoute? = nil
 
-    init(selection: Binding<EnumType?>, cases: [EnumType] = Array(EnumType.allCases), @ViewBuilder content: @escaping (EnumType, Bool) -> Content) {
-        self._selection = selection
+    init(cases: [AppRoute], @ViewBuilder content: @escaping (AppRoute, Bool) -> Content) {
         self.cases = cases
         self.content = content
     }
@@ -25,7 +25,7 @@ struct MyListComponent<EnumType, Content: View>: View where EnumType: CaseIterab
             ForEach(cases, id: \.self) { item in
                 HStack {
                     Group {
-                        if selection == item {
+                        if dataManager.router.getLast() == item {
                             RoundedRectangle(cornerRadius: 5)
                                 .foregroundStyle(AnyShapeStyle(AppSettings.shared.theme.getTextStyle()))
                         } else {
@@ -34,19 +34,20 @@ struct MyListComponent<EnumType, Content: View>: View where EnumType: CaseIterab
                     }
                     .frame(width: 4, height: indicatorHeight)
                     
-                    content(item, selection == item)
+                    content(item, dataManager.router.getLast() == item)
                         .frame(height: 32)
                         .padding(.leading, 5)
-                        .animation(.easeInOut(duration: 0.2), value: selection)
+                        .animation(.easeInOut(duration: 0.2), value: dataManager.router.getLast())
                     Spacer()
                 }
                 .background(hovering == item ? Color(hex: 0x1370F3, alpha: 0.1) : Color.clear)
                 .animation(.spring(duration: 0.2), value: hovering)
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if selection == item { return }
-                    selection = item
-                    indicatorHeight = 0
+                    if dataManager.router.getLast() == item { return }
+                    dataManager.router.removeLast()
+                    dataManager.router.append(item)
+                    indicatorHeight = 10
                     withAnimation(.spring(duration: 0.2)) {
                         indicatorHeight = 24
                     }

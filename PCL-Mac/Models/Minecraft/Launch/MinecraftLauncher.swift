@@ -15,7 +15,7 @@ public class MinecraftLauncher {
         process.environment = ProcessInfo.processInfo.environment
         process.arguments = []
         process.arguments!.append(contentsOf: buildJvmArguments(instance))
-        process.arguments!.append(instance.manifest.mainClass)
+        process.arguments!.append(instance.config.mainClass)
         process.arguments!.append(contentsOf: buildGameArguments(instance))
         debug(process.executableURL!.path + " " + process.arguments!.joined(separator: " "))
         process.currentDirectoryURL = instance.runningDirectory
@@ -75,23 +75,46 @@ public class MinecraftLauncher {
         args.append("-Dorg.lwjgl.util.Debug=true")
 #endif
         args.append(contentsOf: instance.manifest.getArguments().getAllowedJVMArguments())
-        return replaceTemplateStrings(args, with: values)
+        return Util.replaceTemplateStrings(args, with: values)
     }
     
     private static func buildClasspath(_ instance: MinecraftInstance) -> String {
-        var urls: [String] = [
-            
-        ]
-        
-        instance.manifest.getNeededLibraries().forEach { library in
+        var latestMap: [String: (version: String, path: String)] = [:]
+
+        for library in instance.manifest.getNeededLibraries() {
             if let artifact = library.artifact {
-                let path: String = instance.runningDirectory.parent().parent().appending(path: "libraries").appending(path: artifact.path).path
-                urls.append(path)
+                let coord = Util.parse(mavenCoordinate: library.name)
+                let key = "\(coord.groupId):\(coord.artifactId)"
+                if let old = latestMap[key] {
+                    if coord.version.compare(old.version, options: .numeric) == .orderedDescending {
+                        latestMap[key] = (coord.version, artifact.path)
+                    }
+                } else {
+                    latestMap[key] = (coord.version, artifact.path)
+                }
             }
         }
-        
+
+        for coordinate in instance.config.additionalLibraries {
+            let coord = Util.parse(mavenCoordinate: coordinate)
+            let key = "\(coord.groupId):\(coord.artifactId)"
+            let path = Util.toPath(mavenCoordinate: coordinate)
+            if let old = latestMap[key] {
+                if coord.version.compare(old.version, options: .numeric) == .orderedDescending {
+                    latestMap[key] = (coord.version, path)
+                }
+            } else {
+                latestMap[key] = (coord.version, path)
+            }
+        }
+
+        var urls: [String] = []
+        for (_, value) in latestMap {
+            let path = value.path
+            urls.append(instance.minecraftDirectory.librariesUrl.appending(path: path).path)
+        }
         urls.append(instance.runningDirectory.appending(path: "\(instance.config.name).jar").path)
-        
+
         return urls.joined(separator: ":")
     }
     
@@ -100,7 +123,7 @@ public class MinecraftLauncher {
             "auth_player_name": "PCL_Mac",
             "version_name": instance.version.displayName,
             "game_directory": instance.runningDirectory.path,
-            "assets_root": instance.runningDirectory.parent().parent().appending(path: "assets").path,
+            "assets_root": instance.minecraftDirectory.assetsUrl.path,
             "assets_index_name": instance.manifest.assetIndex.id,
             "auth_uuid": "a256e7ba1da830119b633a974279e906",
             "auth_access_token": "9856e9a933b5421cb6cf38f21553bd54",
@@ -108,20 +131,7 @@ public class MinecraftLauncher {
             "version_type": "PCL Mac",
             "user_properties": "\"{}\""
         ]
-        return replaceTemplateStrings(instance.manifest.getArguments().getAllowedGameArguments(), with: values)
-    }
-    
-    private static func replaceTemplateStrings(_ strings: [String], with dict: [String: String]) -> [String] {
-        return strings.map { original in
-            var result = original
-            for (key, value) in dict {
-                result = result.replacingOccurrences(
-                    of: "${\(key)}",
-                    with: value
-                )
-            }
-            return result
-        }
+        return Util.replaceTemplateStrings(instance.manifest.getArguments().getAllowedGameArguments(), with: values)
     }
 }
 

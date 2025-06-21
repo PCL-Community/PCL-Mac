@@ -11,6 +11,7 @@ import PCL_Mac
 import SwiftUI
 import Cocoa
 import UserNotifications
+import Alamofire
 
 struct PCL_MacTests {
     @Test func testRun() async throws {
@@ -103,6 +104,22 @@ struct PCL_MacTests {
         await withCheckedContinuation { continuation in
             let task = MinecraftInstaller.createCompleteTask(MinecraftInstance.create(runningDirectory: URL(fileURLWithUserPath: "~/PCL-Mac-minecraft/versions/1.21.5"))!, continuation.resume)
             task.start()
+        }
+    }
+    
+    @Test func testModLoader() async throws {
+        let instance = MinecraftInstance.create(runningDirectory: URL(fileURLWithUserPath: "~/PCL-Mac-minecraft/versions/1.21.5 NeoForge"))!
+        await ModLoaderInstaller.installNeoforge(instance, "21.5.0-beta")
+    }
+    
+    @Test func testMavenCoord() async {
+        print(Util.toPath(mavenCoordinate: "net.neoforged:neoform:1.21.5-20250325.162830@txt"))
+    }
+    
+    @Test func testModSearch() async throws {
+        let summaries = await ModrinthModSearcher.default.search(query: "sodium")
+        for summary in summaries {
+            print("\(await summary.title) \(await summary.infoUrl)")
         }
     }
 }

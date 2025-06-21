@@ -7,41 +7,39 @@
 
 import SwiftUI
 
-fileprivate enum PageType: CaseIterable, Hashable {
-    case about, debug
-}
-
 struct OthersView: View {
     @ObservedObject private var dataManager: DataManager = .shared
     
-    @State private var pageType: PageType? = .about
-    
     var body: some View {
         Group {
-            switch pageType {
+            switch dataManager.router.getLast() {
             case .about:
                 AboutView()
             case .debug:
                 DebugView()
             default:
-                EmptyView()
+                Spacer()
             }
         }
         .onAppear {
+            if dataManager.router.getLast() == .others {
+                dataManager.router.append(.about)
+            }
             dataManager.leftTab(140) {
                 VStack(alignment: .leading, spacing: 0) {
-                    MyListComponent(selection: $pageType) { type, isSelected in
+                    MyListComponent(cases: SharedConstants.shared.isDevelopment ? [.about, .debug] : [.about]) { type, isSelected in
                         createListItemView(type)
                             .foregroundStyle(isSelected ? AnyShapeStyle(AppSettings.shared.theme.getTextStyle()) : AnyShapeStyle(Color("TextColor")))
                     }
+                    .padding(.top, 10)
                     Spacer()
                 }
             }
         }
     }
     
-    private func createListItemView(_ pageType: PageType) -> some View {
-        switch pageType {
+    private func createListItemView(_ lastComponent: AppRoute) -> some View {
+        switch lastComponent {
         case .about:
             return AnyView(
                 HStack {
@@ -64,6 +62,8 @@ struct OthersView: View {
                         .font(.custom("PCL English", size: 14))
                 }
             )
+        default:
+            return AnyView(EmptyView())
         }
     }
 }

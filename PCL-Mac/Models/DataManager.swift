@@ -18,7 +18,7 @@ class DataManager: ObservableObject {
     @Published var currentPopup: PopupOverlay?
     @Published var networkMonitor: NetworkSpeedMonitor = NetworkSpeedMonitor()
     @Published var versionManifest: VersionManifest?
-    @Published var router: AppRouter = AppRouter()
+    @Published var router: AppRouter = .init()
     @Published var leftTabWidth: CGFloat = 310
     @Published var leftTabContent: AnyView = AnyView(EmptyView())
     @Published var downloadSpeed: Double = 0

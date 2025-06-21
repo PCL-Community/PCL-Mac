@@ -55,20 +55,6 @@ struct ContentView: View {
         }
     }
     
-    private func createSubviewFromRouter() -> some View {
-        Group {
-            switch dataManager.router.getLast() {
-            case .launch: LaunchView()
-            case .download: DownloadView()
-            case .multiplayer: MultiplayerView()
-            case .settings: SettingsView()
-            case .others: OthersView()
-            case .installing(let task): InstallingView(task: task)
-            case .versionList: VersionListView()
-            }
-        }
-    }
-    
     private func createViewFromRouter() -> some View {
         VStack(spacing: 0) {
             if dataManager.router.getLast().isRoot {
@@ -87,14 +73,27 @@ struct ContentView: View {
                 .zIndex(1)
                 .animation(.easeInOut(duration: 0.15), value: dataManager.leftTabWidth)
                 
-                createSubviewFromRouter()
-                    .foregroundStyle(Color(hex: 0x343D4A))
+                AnyView(dataManager.router.getLastView())
+                    .foregroundStyle(Color("TextColor"))
                     .frame(minWidth: 815 - dataManager.leftTabWidth, minHeight: 418)
                     .zIndex(0)
             }
             .background(
                 AppSettings.shared.theme.getBackgroundView()
             )
+            .overlay {
+                if SharedConstants.shared.isDevelopment {
+                    VStack {
+                        HStack {
+                            Text(dataManager.router.getDebugText())
+                                .font(.custom("PCL English", size: 14))
+                                .foregroundStyle(Color("TextColor"))
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                }
+            }
         }
         .ignoresSafeArea(.container, edges: .top)
     }

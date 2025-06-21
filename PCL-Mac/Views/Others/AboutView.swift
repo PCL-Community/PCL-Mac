@@ -33,7 +33,7 @@ fileprivate struct ProfileCard: View {
             MyButtonComponent(text: buttonName) {
                 NSWorkspace.shared.open(URL(string: buttonUrl)!)
             }
-            .fixedSize()
+            .frame(width: 160, height: 40)
         }
         .frame(maxWidth: .infinity)
     }
@@ -48,7 +48,7 @@ struct AboutView: View {
                     ProfileCard(
                         imageName: "LtCatt",
                         name: "龙腾猫越",
-                        description: "Plain Craft Launcher 的原作者",
+                        description: "Plain Craft Launcher 的作者！",
                         buttonName: "赞助作者",
                         buttonUrl: "https://afdian.com/a/LTCat"
                     )
@@ -59,6 +59,14 @@ struct AboutView: View {
                         description: "PCL-Mac 的作者",
                         buttonName: "进入主页",
                         buttonUrl: "https://github.com/YiZhiMCQiu"
+                    )
+                    
+                    ProfileCard(
+                        imageName: "Icon",
+                        name: "PCL-Mac",
+                        description: "当前版本：不知道",
+                        buttonName: "查看源代码",
+                        buttonUrl: "https://github.com/PCL-Community/PCL-Mac"
                     )
                 }
                 .padding(.leading)
@@ -79,7 +87,7 @@ struct AboutView: View {
                     ProfileCard(
                         imageName: "PCL.Proto",
                         name: "PCL.Proto",
-                        description: "本项目的界面样式参考了 PCL.Proto，部分图标也来源于此\n甚至本页面！",
+                        description: "本项目的界面样式参考了 PCL.Proto，部分图标也来源于此",
                         buttonName: "GitHub 仓库",
                         buttonUrl: "https://github.com/PCL-Community/PCL.Proto"
                     )

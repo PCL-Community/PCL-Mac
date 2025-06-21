@@ -7,28 +7,24 @@
 
 import SwiftUI
 
-fileprivate enum PageType: CaseIterable, Hashable {
-    case game
-    case mod
-}
-
 struct DownloadView: View {
     @ObservedObject private var dataManager: DataManager = .shared
     
-    @State private var pageType: PageType? = .game
-    
     var body: some View {
         Group {
-            switch pageType {
-            case .game:
+            switch dataManager.router.getLast() {
+            case .minecraftDownload:
                 MinecraftDownloadView()
-            case .mod:
-                ModDownloadView()
+            case .modSearch:
+                ModSearchView()
             default:
-                EmptyView()
+                Spacer()
             }
         }
         .onAppear {
+            if dataManager.router.getLast() == .download {
+                dataManager.router.append(.minecraftDownload)
+            }
             dataManager.leftTab(170) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Minecraft")
@@ -37,7 +33,7 @@ struct DownloadView: View {
                         .padding(.leading, 12)
                         .padding(.top, 20)
                         .padding(.bottom, 4)
-                    MyListComponent(selection: $pageType, cases: [.game]) { type, isSelected in
+                    MyListComponent(cases: [.minecraftDownload]) { type, isSelected in
                         createListItemView(type)
                             .foregroundStyle(isSelected ? AnyShapeStyle(AppSettings.shared.theme.getTextStyle()) : AnyShapeStyle(Color("TextColor")))
                     }
@@ -47,7 +43,7 @@ struct DownloadView: View {
                         .padding(.leading, 12)
                         .padding(.top, 32)
                         .padding(.bottom, 4)
-                    MyListComponent(selection: $pageType, cases: [.mod]) { type, isSelected in
+                    MyListComponent(cases: [.modSearch]) { type, isSelected in
                         createListItemView(type)
                             .foregroundStyle(isSelected ? AnyShapeStyle(AppSettings.shared.theme.getTextStyle()) : AnyShapeStyle(Color("TextColor")))
                     }
@@ -57,9 +53,9 @@ struct DownloadView: View {
         }
     }
     
-    private func createListItemView(_ pageType: PageType) -> some View {
-        switch pageType {
-        case .game:
+    private func createListItemView(_ lastComponent: AppRoute) -> some View {
+        switch lastComponent {
+        case .minecraftDownload:
             return AnyView(
                 HStack {
                     Image("GameDownloadItem")
@@ -70,7 +66,7 @@ struct DownloadView: View {
                         .font(.custom("PCL English", size: 14))
                 }
             )
-        case .mod:
+        case .modSearch:
             return AnyView(
                 HStack {
                     Image("ModDownloadItem")
@@ -81,6 +77,8 @@ struct DownloadView: View {
                         .font(.custom("PCL English", size: 14))
                 }
             )
+        default:
+            return AnyView(EmptyView())
         }
     }
 }

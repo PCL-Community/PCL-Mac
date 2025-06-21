@@ -25,4 +25,12 @@ extension Array {
         
         return nil
     }
+    
+    public func union(_ another: any Collection<Element>) -> [Element] {
+        var result = self
+        for element in another {
+            result.append(element)
+        }
+        return result
+    }
 }

@@ -21,8 +21,9 @@ struct MyTextFieldComponent: View {
     var body: some View {
         TextField(self.placeholder, text: self.$text)
             .textFieldStyle(.plain)
-            .font(.custom("PCL English", size: 16))
+            .font(.custom("PCL English", size: 14))
             .padding(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+            .frame(maxHeight: .infinity)
             .overlay(RoundedRectangle(cornerRadius: 5)
                 .stroke(self.isHovered ? Color(hex: 0x4890F5) : Color(hex: 0x96C0F9), lineWidth: 1))
             .onHover() { hover in

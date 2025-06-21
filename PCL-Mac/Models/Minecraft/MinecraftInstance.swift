@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftyJSON
 
 public class MinecraftInstance: Identifiable {
     private static var cache: [URL : MinecraftInstance] = [:]
@@ -16,6 +17,7 @@ public class MinecraftInstance: Identifiable {
     
     public let runningDirectory: URL
     public let minecraftDirectory: MinecraftDirectory
+    public let configPath: URL
     public let version: MinecraftVersion
     public var process: Process?
     public let manifest: ClientManifest!
@@ -40,6 +42,7 @@ public class MinecraftInstance: Identifiable {
     private init?(runningDirectory: URL, config: MinecraftConfig? = nil) {
         self.runningDirectory = runningDirectory
         self.minecraftDirectory = MinecraftDirectory(rootUrl: runningDirectory.parent().parent())
+        self.configPath = runningDirectory.appending(path: ".PCL_Mac.json")
         
         do {
             let handle = try FileHandle(forReadingFrom: runningDirectory.appending(path: runningDirectory.lastPathComponent + ".json"))
@@ -50,14 +53,10 @@ public class MinecraftInstance: Identifiable {
             return nil
         }
         
-        let configPath = runningDirectory.appending(path: ".PCL_Mac.json")
-        
         if FileManager.default.fileExists(atPath: configPath.path) {
             do {
                 let handle = try FileHandle(forReadingFrom: configPath)
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
-                self.config = try decoder.decode(MinecraftConfig.self, from: handle.readToEnd()!)
+                self.config = .init(try .init(data: handle.readToEnd()!))
             } catch {
                 err("无法加载配置: \(error.localizedDescription)")
                 debug(configPath.path)
@@ -65,24 +64,28 @@ public class MinecraftInstance: Identifiable {
             }
         } else {
             self.config = config ?? MinecraftConfig(name: runningDirectory.lastPathComponent)
-            // 保存配置
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            do {
-                try FileManager.default.createDirectory(
-                    at: runningDirectory,
-                    withIntermediateDirectories: true,
-                    attributes: nil
-                )
-                try encoder.encode(config).write(to: configPath, options: .atomic)
-            } catch {
-                err("无法保存配置: \(error.localizedDescription)")
-            }
         }
         
         // 检查 Java 路径是否存在
         if self.config.javaPath == nil {
             self.config.javaPath = MinecraftInstance.findSuitableJava(version)?.executableUrl.path
+        }
+        
+        saveConfig()
+    }
+    
+    public func saveConfig() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        do {
+            try FileManager.default.createDirectory(
+                at: runningDirectory,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+            try encoder.encode(config).write(to: configPath, options: .atomic)
+        } catch {
+            err("无法保存配置: \(error.localizedDescription)")
         }
     }
     
@@ -129,10 +132,34 @@ public class MinecraftInstance: Identifiable {
 
 public struct MinecraftConfig: Codable {
     public let name: String
+    public var mainClass: String
+    public var additionalLibraries: Set<String> = []
     public var javaPath: String!
+    public var clientBrand: ClientBrand
     
-    public init(name: String, javaPath: String? = nil) {
-        self.name = name
-        self.javaPath = javaPath
+    public init(_ json: JSON) {
+        self.name = json["name"].stringValue
+        self.mainClass = json["mainClass"].string ?? "net.minecraft.client.main.Main"
+        self.additionalLibraries = .init(json["additionalLibraries"].array?.map { $0.stringValue } ?? [])
+        self.javaPath = json["javaPath"].string
+        if let clientBrand = json["clientBrand"].string {
+            self.clientBrand = .init(rawValue: clientBrand)!
+        } else {
+            self.clientBrand = .vanilla
+        }
     }
+    
+    public init(name: String, mainClass: String = "net.minecraft.client.main.Main", javaPath: String? = nil) {
+        self.name = name
+        self.mainClass = mainClass
+        self.javaPath = javaPath
+        self.clientBrand = .vanilla
+    }
+}
+
+public enum ClientBrand: String, Codable {
+    case vanilla = "vanilla"
+    case fabric = "fabric"
+    case forge = "forge"
+    case neoforge = "neoforge"
 }

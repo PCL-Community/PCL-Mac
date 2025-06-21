@@ -70,7 +70,7 @@ public class ClientManifest {
 
     public class Library: Hashable {
         public let name: String
-        private let splited: [String]
+        private let split: [String]
         public var groupId: String
         public var artifactId: String
         public var version: String
@@ -85,11 +85,11 @@ public class ClientManifest {
             name = json["name"].stringValue
             rules = json["rules"].arrayValue.map { Rule(json: $0) }
             natives = json["natives"].dictionaryObject as? [String: String] ?? [:]
-            splited = name.split(separator: ":").map(String.init)
-            groupId = splited[0]
-            artifactId = splited[1]
-            version = splited[2]
-            classifier = splited.count >= 4 ? splited[3] : nil
+            split = name.split(separator: ":").map(String.init)
+            groupId = split[0]
+            artifactId = split[1]
+            version = split[2]
+            classifier = split.count >= 4 ? split[3] : nil
             var dls: [String: DownloadInfo] = [:]
             if let downloadsJson = json["downloads"].dictionary {
                 for (k, v) in downloadsJson {

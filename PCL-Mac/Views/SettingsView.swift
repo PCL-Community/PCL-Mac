@@ -71,6 +71,7 @@ struct SettingsView: View {
                     .padding()
                     .foregroundStyle(Color("TextColor"))
                 }
+                .scrollIndicators(.never)
             }
         }
         .onAppear {

@@ -8,16 +8,22 @@
 import SwiftUI
 
 fileprivate struct LeftTab: View {
-    @ObservedObject private var dataManager: DataManager = DataManager.shared
+    @ObservedObject private var dataManager: DataManager = .shared
+    @ObservedObject private var accountManager: AccountManager = .shared
     
     @State private var instance: MinecraftInstance?
     
     var body: some View {
         VStack {
             Spacer()
-            Text("PCL_Mac")
-                .font(.custom("PCL English", size: 16))
-                .foregroundStyle(Color("TextColor"))
+            if let account = accountManager.getAccount() {
+                MinecraftAvatarComponent(type: .username, src: account.name)
+                Text(account.name)
+                    .font(.custom("PCL English", size: 16))
+                    .foregroundStyle(Color("TextColor"))
+            } else {
+                Text("无账号")
+            }
             Spacer()
             if let instance = self.instance {
                 MyButtonComponent(text: "启动游戏", descriptionText: instance.config.name, foregroundStyle: AppSettings.shared.theme.getTextStyle()) {

@@ -21,7 +21,7 @@ public class MinecraftInstance: Identifiable {
     public let configPath: URL
     public private(set) var version: MinecraftVersion? = nil
     public var process: Process?
-    public let manifest: ClientManifest!
+    public let manifest: ClientManifest
     public var config: MinecraftConfig
     
     public let id: UUID = UUID()
@@ -44,14 +44,6 @@ public class MinecraftInstance: Identifiable {
         self.minecraftDirectory = MinecraftDirectory(rootUrl: runningDirectory.parent().parent())
         self.configPath = runningDirectory.appending(path: ".PCL_Mac.json")
         
-        do {
-            let handle = try FileHandle(forReadingFrom: runningDirectory.appending(path: runningDirectory.lastPathComponent + ".json"))
-            manifest = try ClientManifest.parse(try handle.readToEnd()!)
-        } catch {
-            err("无法加载客户端 JSON: \(error)")
-            return nil
-        }
-        
         if FileManager.default.fileExists(atPath: configPath.path) {
             do {
                 let handle = try FileHandle(forReadingFrom: configPath)
@@ -62,7 +54,27 @@ public class MinecraftInstance: Identifiable {
                 return nil
             }
         } else {
-            self.config = config ?? MinecraftConfig(name: runningDirectory.lastPathComponent, mainClass: manifest.mainClass)
+            self.config = config ?? MinecraftConfig(name: runningDirectory.lastPathComponent, mainClass: "")
+        }
+        
+        do {
+            let data = try FileHandle(forReadingFrom: runningDirectory.appending(path: runningDirectory.lastPathComponent + ".json")).readToEnd()!
+            let json = try JSON(data: data)
+            if !json["inheritsFrom"].exists() && !json["launcherMeta"].exists() {
+                manifest = try ClientManifest.parse(data, instanceUrl: runningDirectory)
+            } else {
+                switch self.config.clientBrand {
+                case .fabric:
+                    manifest = ClientManifest.createFromFabricManifest(.init(json), runningDirectory)
+                default:
+                    warn("发现不受支持的加载器: \(self.config.name) \(self.config.clientBrand.rawValue)")
+                    manifest = try ClientManifest.parse(data, instanceUrl: runningDirectory)
+                }
+            }
+            ArtifactVersionMapper.map(manifest)
+        } catch {
+            err("无法加载客户端清单: \(error)")
+            return nil
         }
         
         detectVersion()
@@ -120,8 +132,8 @@ public class MinecraftInstance: Identifiable {
         return suitableJava
     }
     
-    public func launch() async {
-        if !config.skipResourcesCheck {
+    public func launch(skipResourceCheck: Bool = false) async {
+        if !config.skipResourcesCheck && !skipResourceCheck {
             log("正在进行资源完整性检查")
             await withCheckedContinuation { continuation in
                 let task = MinecraftInstaller.createCompleteTask(self, continuation.resume)
@@ -150,7 +162,7 @@ public class MinecraftInstance: Identifiable {
             self.config.version = try JSON(data: data)["id"].stringValue
         } catch {
             err("无法检测版本: \(error.localizedDescription)，正在使用清单版本")
-            self.config.version = self.manifest!.id
+            self.config.version = self.manifest.id
         }
     }
 }

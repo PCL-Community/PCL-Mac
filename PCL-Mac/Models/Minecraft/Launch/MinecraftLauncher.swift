@@ -29,7 +29,7 @@ public class MinecraftLauncher {
         process.environment = ProcessInfo.processInfo.environment
         process.arguments = []
         process.arguments!.append(contentsOf: buildJvmArguments())
-        process.arguments!.append(instance.config.mainClass)
+        process.arguments!.append(instance.manifest.mainClass)
         process.arguments!.append(contentsOf: buildGameArguments())
         debug(process.executableURL!.path + " " + process.arguments!.joined(separator: " ")
             .replacingOccurrences(of: #"--accessToken\s+\S+"#, with: "--accessToken 🎉", options: .regularExpression))
@@ -80,7 +80,10 @@ public class MinecraftLauncher {
             "natives_directory": instance.runningDirectory.appending(path: "natives").path,
             "launcher_name": "PCL Mac",
             "launcher_version": "1.0.0",
-            "classpath": buildClasspath()
+            "classpath": buildClasspath(),
+            "classpath_separator": ":",
+            "library_directory": instance.minecraftDirectory.librariesUrl.path,
+            "version_name": instance.config.name
         ]
         
         var args: [String] = [

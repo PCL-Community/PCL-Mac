@@ -33,9 +33,10 @@ import Alamofire
 
 public class ModLoaderInstaller {
     public static func installFabric(_ instance: MinecraftInstance, _ loaderVersion: String) async {
-        if instance.config.clientBrand != .vanilla {
-            err("无法安装 Fabric: 实例 \(instance.config.name) 已有 Mod 加载器: \(instance.config.clientBrand.rawValue)")
-        }
+//        if instance.config.clientBrand != .vanilla {
+//            err("无法安装 Fabric: 实例 \(instance.config.name) 已有 Mod 加载器: \(instance.config.clientBrand.rawValue)")
+//        }
+        
         if let data = try? await AF.request(
             "https://meta.fabricmc.net/v2/versions/loader/\(instance.version!.displayName)"
         ).serializingResponse(using: .data).value,
@@ -44,20 +45,30 @@ public class ModLoaderInstaller {
                 err("找不到对应的 Fabric Loader 版本: \(loaderVersion)")
                 return
             }
+            
             await withCheckedContinuation { continuation in
                 let downloader = ProgressiveDownloader(
-                    urls: manifest.libraryUrls,
-                    destinations: manifest.libraries.map { instance.minecraftDirectory.librariesUrl.appending(path: $0)},
+                    urls: manifest.libraries.map { URL(string: $0.artifact!.url)! },
+                    destinations: manifest.libraries.map { instance.minecraftDirectory.librariesUrl.appending(path: $0.artifact!.path)},
                     skipIfExists: true,
                     completion: continuation.resume
                 )
                 downloader.start()
             }
             
-            for library in manifest.libraryCoords {
-                instance.config.additionalLibraries.insert(library)
+            do {
+                try? FileManager.default.createDirectory(at: instance.runningDirectory.appending(path: ".pcl_mac"), withIntermediateDirectories: true)
+                try FileManager.default.copyItem(
+                    at: instance.runningDirectory.appending(path: "\(instance.config.name).json"),
+                    to: instance.runningDirectory.appending(path: ".pcl_mac").appending(path: "\(manifest.minecraftVersion).json")
+                )
+                let handle = try FileHandle(forWritingTo: instance.runningDirectory.appending(path: "\(instance.config.name).json"))
+                handle.truncateFile(atOffset: 0)
+                try handle.write(contentsOf: manifest.jsonString.data(using: .utf8)!)
+            } catch {
+                err("无法保存 Fabric 清单: \(error.localizedDescription)")
             }
-            instance.config.mainClass = manifest.mainClass
+            
             instance.config.clientBrand = .fabric
             instance.saveConfig()
         }
@@ -140,12 +151,13 @@ public class ModLoaderInstaller {
             )  { (current, _) in current }
             
             // 6. 执行处理器任务
+            log("正在执行 \(profile.processors.count) 个处理器任务")
             for processor in profile.processors {
-                let jarPath = instance.minecraftDirectory.librariesUrl.appending(path: processor.jarPath)
+                let jarPath = temp.appending(path: processor.jarPath)
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/java")
                 process.arguments = [
-                    "-cp", processor.classpath.map { instance.minecraftDirectory.librariesUrl.appending(path: $0).path }.union([installer.path]).joined(separator: ":"),
+                    "-cp", processor.classpath.map { temp.appending(path: $0).path }.union([installer.path]).joined(separator: ":"),
                     Util.getMainClass(jarPath)!
                 ].union(Util.replaceTemplateStrings(processor.args.map{ parse($0, in: instance.minecraftDirectory) }, with: values))
                 process.environment = ProcessInfo.processInfo.environment
@@ -154,11 +166,27 @@ public class ModLoaderInstaller {
                     try process.run()
                     process.waitUntilExit()
                 } catch {
-                    err("无法调用处理器: \(error.localizedDescription)")
+                    err("无法执行处理器任务: \(error.localizedDescription)")
                 }
             }
             
-            // 7. 清理
+            // 7. 处理子版本
+            do {
+                try? FileManager.default.createDirectory(at: instance.runningDirectory.appending(path: ".pcl_mac"), withIntermediateDirectories: true)
+                try FileManager.default.moveItem(
+                    at: instance.runningDirectory.appending(path: "\(instance.config.name).json"),
+                    to: instance.runningDirectory.appending(path: ".pcl_mac").appending(path: "\(instance.version!.displayName).json")
+                )
+                
+                try FileManager.default.copyItem(
+                    at: temp.appending(path: "version.json"),
+                    to: instance.runningDirectory.appending(path: "\(instance.config.name).json")
+                )
+            } catch {
+                err("无法保存 NeoForge 清单: \(error.localizedDescription)")
+            }
+            
+            // 8. 清理
             Util.clearTemp()
         } else {
             err("无法获取版本列表")

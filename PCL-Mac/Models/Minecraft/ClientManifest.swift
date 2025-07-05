@@ -1,11 +1,4 @@
 //
-//  NewClientManifest.swift
-//  PCL-Mac
-//
-//  Created by YiZhiMCQiu on 2025/6/14.
-//
-
-//
 //  ClientManifest.swift
 //  PCL-Mac
 //
@@ -17,23 +10,33 @@ import SwiftyJSON
 
 public class ClientManifest {
     public let id: String
-    public let mainClass: String
+    public var mainClass: String
     public let type: String
     public let assetIndex: AssetIndex
     public let assets: String
-    public let downloads: [String: DownloadInfo]
-    public let libraries: [Library]
+    public var libraries: [Library]
     public let arguments: Arguments?
     public let minecraftArguments: String?
     public let javaVersion: Int?
+    
+    private init(id: String, mainClass: String, type: String, assetIndex: AssetIndex, assets: String, libraries: [Library], arguments: Arguments?, minecraftArguments: String?, javaVersion: Int?) {
+        self.id = id
+        self.mainClass = mainClass
+        self.type = type
+        self.assetIndex = assetIndex
+        self.assets = assets
+        self.libraries = libraries
+        self.arguments = arguments
+        self.minecraftArguments = minecraftArguments
+        self.javaVersion = javaVersion
+    }
 
-    public init(json: JSON) {
+    private init(json: JSON) {
         self.id = json["id"].stringValue
         self.mainClass = json["mainClass"].stringValue
         self.type = json["type"].stringValue
         self.assets = json["assets"].stringValue
         self.assetIndex = AssetIndex(json: json["assetIndex"])
-        self.downloads = json["downloads"].dictionaryValue.mapValues(DownloadInfo.init(json:))
         self.libraries = json["libraries"].arrayValue.map(Library.init(json:))
         self.arguments = json["arguments"].exists() ? Arguments(json: json["arguments"]) : nil
         self.minecraftArguments = json["minecraftArguments"].string
@@ -56,7 +59,7 @@ public class ClientManifest {
     }
 
     public class DownloadInfo {
-        public let path: String
+        public var path: String
         public let sha1: String?
         public let size: Int?
         public var url: String
@@ -130,8 +133,8 @@ public class ClientManifest {
     }
 
     public class Arguments {
-        public let game: [GameArgument]
-        public let jvm: [JvmArgument]
+        public var game: [GameArgument]
+        public var jvm: [JvmArgument]
 
         public init(json: JSON) {
             game = json["game"].arrayValue.map { GameArgument(json: $0) }
@@ -261,10 +264,69 @@ public class ClientManifest {
             }
         }
     }
+    
+    public static func createFromFabricManifest(_ fabricManifest: FabricManifest, _ instanceUrl: URL) -> ClientManifest {
+        let manifest: ClientManifest = .init(
+            id: fabricManifest.loaderVersion,
+            mainClass: fabricManifest.mainClass,
+            type: "fabric",
+            assetIndex: .init(json: .null),
+            assets: "",
+            libraries: fabricManifest.libraries,
+            arguments: nil,
+            minecraftArguments: nil,
+            javaVersion: nil
+        )
+        
+        let parent: ClientManifest
+        let parentUrl = instanceUrl.appending(path: ".pcl_mac").appending(path: "\(fabricManifest.minecraftVersion).json")
+        
+        do {
+            let data = try FileHandle(forReadingFrom: parentUrl).readToEnd()!
+            parent = try .parse(data, instanceUrl: instanceUrl)
+        } catch {
+            err("无法解析 inheritsFrom: \(error)")
+            return manifest
+        }
+        
+        return merge(parent: parent, manifest: manifest)
+    }
 
-    public static func parse(_ data: Data) throws -> ClientManifest {
+    public static func parse(_ data: Data, instanceUrl: URL?) throws -> ClientManifest {
         let json = try JSON(data: data)
+        
+    checkParent:
+        if let inheritsFrom = json["inheritsFrom"].string,
+           let instanceUrl = instanceUrl {
+            let parentUrl = instanceUrl.appending(path: ".pcl_mac").appending(path: "\(inheritsFrom).json")
+            
+            guard FileManager.default.fileExists(atPath: parentUrl.path) else {
+                err("\(instanceUrl.lastPathComponent) 的客户端清单中有 inheritsFrom 字段，但其对应的 JSON 不存在")
+                break checkParent
+            }
+            
+            let parent: ClientManifest
+            let manifest = ClientManifest(json: json)
+            do {
+                let data = try FileHandle(forReadingFrom: parentUrl).readToEnd()!
+                parent = try .parse(data, instanceUrl: instanceUrl)
+            } catch {
+                err("无法解析 inheritsFrom: \(error)")
+                break checkParent
+            }
+            
+            return merge(parent: parent, manifest: manifest)
+        }
         return ClientManifest(json: json)
+    }
+    
+    private static func merge(parent: ClientManifest, manifest: ClientManifest) -> ClientManifest {
+        parent.libraries.insert(contentsOf: manifest.libraries, at: 0)
+        parent.arguments?.game.append(contentsOf: manifest.arguments?.game ?? [])
+        parent.arguments?.jvm.append(contentsOf: manifest.arguments?.jvm ?? [])
+        parent.mainClass = manifest.mainClass
+        
+        return parent
     }
 
     public func getNeededLibraries() -> [Library] {
@@ -285,7 +347,12 @@ public class ClientManifest {
             } else if let artifact = lib.artifact,
                       lib.name.hasPrefix("org.lwjgl"),
                       lib.name.contains("natives") {
-                result[lib] = artifact
+//                if lib.classifier!.hasSuffix("arm64") && ExecArchitectury.SystemArch == .arm64
+//                    || !lib.classifier!.hasSuffix("arm64") && ExecArchitectury.SystemArch == .x64 {
+                    result[lib] = artifact
+//                } else {
+//                    debug("已筛出与系统架构不匹配的本地库: \(lib.name)")
+//                }
             }
         }
         return result
